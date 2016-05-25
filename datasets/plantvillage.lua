@@ -3,7 +3,7 @@ Loads from files with extensions 'jpg', 'png','JPG','PNG','JPEG', 'ppm', 'PPM', 
 --]]
 
 require 'paths'
-t = require 'datasets/transforms.lua'
+local t = require 'datasets/transforms.lua'
 
 local DataGen = torch.class 'DataGen'
 
