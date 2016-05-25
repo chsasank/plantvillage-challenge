@@ -4,9 +4,9 @@ local SpatialConvolution = nn.SpatialConvolution--lib[1]
 local SpatialMaxPooling = nn.SpatialMaxPooling--lib[2]
 
 function createModel(opt)
-    opt = opt or {}
-    nbClasses = opt.nbClasses or 38
-    nbChannels = opt.nbChannels or 3
+    local opt = opt or {}
+    local nbClasses = opt.nbClasses or 38
+    local nbChannels = opt.nbChannels or 3
 
     -- from https://code.google.com/p/cuda-convnet2/source/browse/layers/layers-imagenet-1gpu.cfg
     -- this is AlexNet that was presented in the One Weird Trick paper. http://arxiv.org/abs/1404.5997

@@ -15,7 +15,9 @@ cmd:option('-batchSize',                32,         'batch size')
 cmd:option('-nbClasses',                38,         '# of classes' )
 cmd:option('-nbChannels',               3,          '# of channels' )
 cmd:option('-backend',                  'cudnn',    'Options: cudnn | nn')
-cmd:option('-retrain',                  'none',    	'Path to model to finetune')
+cmd:option('-model',                    'alexnet',  'Options: alexnet | vgg | resnet')
+cmd:option('-depth',                    'A',        'For vgg depth: A | B | C | D, For resnet depth: 18 | 34 | 50 | 101 | ... Not applicable for alexnet')
+cmd:option('-retrain',                  'none',     'Path to model to finetune')
 
 local opt = cmd:parse(arg or {}) -- Table containing all these options
 
@@ -28,21 +30,25 @@ if opt.retrain ~= 'none' then
     print('Loading model from file: ' .. opt.retrain);
     net = torch.load(opt.retrain)
 else
+    require('models/'..opt.model)
+    print('Creating new '..opt.model..'model')
     net = createModel(opt)
 end
 
 local criterion = nn.ClassNLLCriterion()
 
 if opt.backend ~= 'nn' then
-	require 'cunn'
-	require 'cudnn'
-	net = net:cuda()
-	cudnn.convert(net, cudnn) --Convert the net to cudnn
-	criterion = criterion:cuda()
+    require 'cunn'; require 'cudnn'
+    net = net:cuda()
+    cudnn.convert(net, cudnn) --Convert the net to cudnn
+    criterion = criterion:cuda()
+    cudnn.fastest = true; cudnn.benchmark = true
 end
 
 require 'datasets/plantvillage.lua'
 dgen = DataGen('datasets/crowdai/')
+
+
 
 ----[[Get your trainer object and start training]]-----
 require 'train.lua'
