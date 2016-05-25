@@ -1,9 +1,6 @@
 require 'optim'
 require 'xlua'
 require 'nn'
-require 'cudnn'
-require 'cunn'
-require 'hdf5'
 require 'image'
 local c = require 'trepl.colorize'
 
@@ -29,7 +26,11 @@ function Trainer:__init(model, criterion, dataGen, opt)
     self.opt = opt
     self.optimState = {
         learningRate = opt.learningRate or 0.01,
-        beta1 = opt.beta1 or 0.9,
+        learningRateDecay = 0.0,
+        momentum = opt.momentum,
+        nesterov = true,
+        dampening = 0.0,
+        weightDecay = opt.weight_decay
         }
     self.batchSize = opt.batchSize or 32
     self.nbClasses = opt.nbClasses or 38
@@ -39,6 +40,10 @@ function Trainer:__init(model, criterion, dataGen, opt)
 
     self.dataGen = dataGen
     self.confusion = optim.ConfusionMatrix(self.nbClasses)
+    if self.opt.backend ~= 'nn' then
+        require 'cudnn'
+        require 'cunn'
+    end
 end
 
 
@@ -50,7 +55,7 @@ function Trainer:scheduler(epoch)
     epoch: int
         adjusts learning rate based on this.
     --]]--
-    decay = math.floor((epoch - 1) / 15)
+    decay = math.floor((epoch - 1) / 30)
     return self.opt.learningRate* math.pow(0.1, decay)
 end
 
@@ -77,7 +82,12 @@ function Trainer:train()
 
     -- Loop over batches
     for input_, target_ in self.dataGen:trainGenerator(self.batchSize) do 
-        input = input_:cuda(); target = target_:cuda()
+        if self.opt.backend ~= 'nn' then
+            input = input_:cuda(); target = target_:cuda()
+        else
+            input = input_; target = target_
+        end
+
         xlua.progress(count+input:size(1), self.dataGen.nbTrainExamples)
         numBatches = numBatches + 1
 
@@ -125,7 +135,12 @@ function Trainer:validate()
     local input, target, output
     
     for input_, target_ in self.dataGen:valGenerator(self.batchSize) do
-        input = input_:cuda(); target = target_:cuda()
+        if self.opt.backend ~= 'nn' then
+            input = input_:cuda(); target = target_:cuda()
+        else
+            input = input_; target = target_
+        end
+
         xlua.progress(count+input:size(1), self.dataGen.nbValExamples)
         
         -- Forward pass

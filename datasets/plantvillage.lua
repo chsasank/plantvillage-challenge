@@ -3,38 +3,22 @@ Loads from files with extensions 'jpg', 'png','JPG','PNG','JPEG', 'ppm', 'PPM', 
 --]]
 
 require 'paths'
-local sys = require 'sys'
-local ffi = require 'ffi'
 t = require 'datasets/transforms.lua'
-
-local function getClass(path)
-    local className = paths.basename(paths.dirname(path))
-    return tonumber(className:sub(3)) + 1
-end
-
--- Computed from random subset of ImageNet training images
-local meanstd = {
-   mean = { 0.485, 0.456, 0.406 },
-   std = { 0.229, 0.224, 0.225 },
-}
-local pca = {
-   eigval = torch.Tensor{ 0.2175, 0.0188, 0.0045 },
-   eigvec = torch.Tensor{
-      { -0.5675,  0.7192,  0.4009 },
-      { -0.5808, -0.0045, -0.8140 },
-      { -0.5836, -0.6948,  0.4203 },
-   },
-}
-
 
 local DataGen = torch.class 'DataGen'
 
 function DataGen:__init(path)
-   self.rootPath = path
-   self.trainImgPaths = self.findImages(paths.concat(self.rootPath, 'train'))
-   self.valImgPaths = self.findImages(paths.concat(self.rootPath, 'val'))
-   self.nbTrainExamples = #self.trainImgPaths
-   self.nbValExamples = #self.valImgPaths 
+    -- path is path of directory containing 'train' and 'val' folders
+    self.rootPath = path
+    self.trainImgPaths = self.findImages(paths.concat(self.rootPath, 'train'))
+    self.valImgPaths = self.findImages(paths.concat(self.rootPath, 'val'))
+    self.nbTrainExamples = #self.trainImgPaths
+    self.nbValExamples = #self.valImgPaths 
+end
+
+local function getClass(path)
+    local className = paths.basename(paths.dirname(path))
+    return tonumber(className:sub(3)) + 1
 end
 
 
@@ -84,8 +68,8 @@ function DataGen:trainGenerator(batchSize)
             contrast = 0.4,
             saturation = 0.4,
         }),
-        t.Lighting(0.1, pca.eigval, pca.eigvec),
-        t.ColorNormalize(meanstd),
+        t.Lighting(0.1, t.pca.eigval, t.pca.eigvec),
+        t.ColorNormalize(t.meanstd),
         t.HorizontalFlip(0.5),}
 
    return self:generator(self.trainImgPaths, batchSize, trainPreprocess)
@@ -95,7 +79,7 @@ end
 function DataGen:valGenerator(batchSize)
     local valPreprocess = t.Compose{
          t.Scale(256),
-         t.ColorNormalize(meanstd),
+         t.ColorNormalize(t.meanstd),
          t.CenterCrop(224),}
    return self:generator(self.valImgPaths, batchSize, valPreprocess)
 end
