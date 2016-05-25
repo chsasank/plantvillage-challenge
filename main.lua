@@ -10,20 +10,21 @@ cmd:text('Torch-7 PlantVillage Challenge Training script')
 cmd:text()
 cmd:option('-learningRate',             0.01,       'initial learning rate for sgd')
 cmd:option('-momentum',                 0.9,        'momentum term of sgd')
-cmd:option('-maxEpochs',                250,        'Max # Epochs')
+cmd:option('-maxEpochs',                120,        'Max # Epochs')
 cmd:option('-batchSize',                32,         'batch size')
 cmd:option('-nbClasses',                38,         '# of classes' )
 cmd:option('-nbChannels',               3,          '# of channels' )
 cmd:option('-backend',                  'cudnn',    'Options: cudnn | nn')
 cmd:option('-model',                    'alexnet',  'Options: alexnet | vgg | resnet')
 cmd:option('-depth',                    'A',        'For vgg depth: A | B | C | D, For resnet depth: 18 | 34 | 50 | 101 | ... Not applicable for alexnet')
+
 cmd:option('-retrain',                  'none',     'Path to model to finetune')
+cmd:option('-save',                     'models_save','Path to save models')
 
 local opt = cmd:parse(arg or {}) -- Table containing all these options
 
 
 -----------[[Model and criterion here]]---------------
-require 'models/alexnet.lua'
 local net
 if opt.retrain ~= 'none' then
     assert(paths.filep(opt.retrain), 'File not found: ' .. opt.retrain)
@@ -39,10 +40,11 @@ local criterion = nn.ClassNLLCriterion()
 
 if opt.backend ~= 'nn' then
     require 'cunn'; require 'cudnn'
+    cudnn.fastest = true; cudnn.benchmark = true
+
     net = net:cuda()
     cudnn.convert(net, cudnn) --Convert the net to cudnn
     criterion = criterion:cuda()
-    cudnn.fastest = true; cudnn.benchmark = true
 end
 
 require 'datasets/plantvillage.lua'
@@ -60,15 +62,20 @@ for n_epoch = 1,opt.maxEpochs do
     local trainAcc = trainer:train()  --Train on training set
     local valAcc = trainer:validate() --Valiate on valiadation set
 
+    -- Checkpoint model every 25 epochs
     if n_epoch%25 == 0 then
-        local save_path = paths.concat( opt.save, ('unet_epoch_%d'):format(n_epoch) )
+        local save_path = paths.concat( opt.save, opt.model..'_'..n_epoch..'.h5')
         torch.save(save_path, net)
         print("Checkpointing Model")
     end
 
+    -- Early stopping 
     if valAcc > bestValAcc then
         bestValAcc = valAcc
-        print(('Current Best Validation Accuracy %.3f'):format(bestValAcc))
+        print(('Current Best Validation Accuracy %.3f. Saving the model.'):format(bestValAcc))
+        local save_path = paths.concat( opt.save, opt.model..'_best.h5')
+        torch.save(save_path, net)
     end
+
     print("Epoch "..n_epoch.." complete")
 end
