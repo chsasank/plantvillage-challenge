@@ -37,10 +37,10 @@ function DataGen:generator(pathsList, batchSize, preprocess)
          for j = 1, currentBatch:size(1) do
             local currentPath = pathsList[currentBatch[j]]
             local currentClass = getClass(currentPath)
-            local ok, rawImg = pcall(function() return t.loadImage(currentPath) end)
+            local ok, img = pcall(function() return t.loadImage(currentPath) end)
              if ok then
-                local procImg = preprocess(rawImg)
-                table.insert(imgList, procImg)
+                if preprocess then img = preprocess(img) end
+                table.insert(imgList, img)
                 table.insert(clsList, currentClass)
             end
          end
