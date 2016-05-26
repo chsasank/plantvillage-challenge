@@ -220,11 +220,11 @@ function M.Lighting(alphastd, eigval, eigvec)
 end
 
 local function blend(img1, img2, alpha)
-   return img1*alpha + img2*(1-alpha)
+   return img1:mul(alpha):add(1 - alpha, img2)
 end
 
-local function grayscale(img)
-   local dst = torch.zeros(img:size())
+local function grayscale(dst, img)
+   dst:resizeAs(img)
    dst[1]:zero()
    dst[1]:add(0.299, img[1]):add(0.587, img[2]):add(0.114, img[3])
    dst[2]:copy(dst[1])
@@ -233,29 +233,41 @@ local function grayscale(img)
 end
 
 function M.Saturation(var)
+   local gs
+
    return function(input)
-      gs = grayscale(input)
+      gs = gs or input.new()
+      grayscale(gs, input)
+
       local alpha = 1.0 + torch.uniform(-var, var)
-      input = blend(input, gs, alpha)
+      blend(input, gs, alpha)
       return input
    end
 end
 
 function M.Brightness(var)
+   local gs
+
    return function(input)
-      gs = torch.zeros(img:size())
+      gs = gs or input.new()
+      gs:resizeAs(input):zero()
+
       local alpha = 1.0 + torch.uniform(-var, var)
-      input = blend(input, gs, alpha)
+      blend(input, gs, alpha)
       return input
    end
 end
 
 function M.Contrast(var)
+   local gs
+
    return function(input)
-      gs = grayscale(input)
+      gs = gs or input.new()
+      grayscale(gs, input)
       gs:fill(gs[1]:mean())
+
       local alpha = 1.0 + torch.uniform(-var, var)
-      input = blend(input, gs, alpha)
+      blend(input, gs, alpha)
       return input
    end
 end
