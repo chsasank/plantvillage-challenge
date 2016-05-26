@@ -251,7 +251,6 @@ function M.Brightness(var)
    return function(input)
       gs = gs or input.new()
       gs:resizeAs(input):zero()
-
       local alpha = 1.0 + torch.uniform(-var, var)
       blend(input, gs, alpha)
       return input
