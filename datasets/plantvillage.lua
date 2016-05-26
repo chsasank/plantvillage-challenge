@@ -9,6 +9,7 @@ local DataGen = torch.class 'DataGen'
 
 function DataGen:__init(path)
     -- path is path of directory containing 'train' and 'val' folders
+    torch.setnumthreads(1)
     self.rootPath = path
     self.trainImgPaths = self.findImages(paths.concat(self.rootPath, 'train'))
     self.valImgPaths = self.findImages(paths.concat(self.rootPath, 'val'))
