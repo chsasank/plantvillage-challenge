@@ -32,7 +32,7 @@ if opt.retrain ~= 'none' then
     net = torch.load(opt.retrain)
 else
     require('models/'..opt.model)
-    print('Creating new '..opt.model..'model')
+    print('Creating new '..opt.model..' model')
     net = createModel(opt)
 end
 
@@ -56,23 +56,23 @@ dgen = DataGen('datasets/crowdai/')
 require 'train.lua'
 local trainer = Trainer(net, criterion, dgen, opt)
 
-local bestValAcc = 0
+local bestValLoss = math.huge
 
 for n_epoch = 1,opt.maxEpochs do
-    local trainAcc = trainer:train()  --Train on training set
-    local valAcc = trainer:validate() --Valiate on valiadation set
-
-    -- Checkpoint model every 25 epochs
-    if n_epoch%25 == 0 then
+    local trainLoss = trainer:train()  --Train on training set
+    local valLoss = trainer:validate() --Valiate on valiadation set
+    
+    -- Checkpoint model every 10 epochs
+    if n_epoch%10 == 0 then
         local save_path = paths.concat( opt.save, opt.model..'_'..n_epoch..'.h5')
         torch.save(save_path, net)
         print("Checkpointing Model")
     end
 
     -- Early stopping 
-    if valAcc > bestValAcc then
-        bestValAcc = valAcc
-        print(('Current Best Validation Accuracy %.3f. Saving the model.'):format(bestValAcc))
+    if valLoss <  bestValLoss then
+        bestValLoss = valLoss
+        print(('Current Best Validation Loss %.5f. Saving the model.'):format(bestValLoss))
         local save_path = paths.concat( opt.save, opt.model..'_best.h5')
         torch.save(save_path, net)
     end
