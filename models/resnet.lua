@@ -19,7 +19,7 @@ local SBatchNorm = nn.SpatialBatchNormalization
 
 function createModel(opt)
    opt = opt or {}
-   local depth = opt.depth or 34
+   local depth = tonumber(opt.depth or 34)
    local shortcutType = opt.shortcutType or 'B'
    local iChannels
    
@@ -110,7 +110,6 @@ function createModel(opt)
       [101] = {{3, 4, 23, 3}, 2048, bottleneck},
       [152] = {{3, 8, 36, 3}, 2048, bottleneck},
    }
-
    assert(cfg[depth], 'Invalid depth: ' .. tostring(depth))
    local def, nFeatures, block = table.unpack(cfg[depth])
    iChannels = 64
