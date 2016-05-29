@@ -104,7 +104,7 @@ for _,imgpath in ipairs(all_test_paths) do
 
    -- Get the output of the softmax and mean it
    local output = model:forward(img_batch:cuda()):mean(1)[1]
-   local string_out = string_output(output)
+   local string_out = string_output(output:exp())
 
    print(name .. string_out)
 end
