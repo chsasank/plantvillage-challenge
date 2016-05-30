@@ -18,7 +18,7 @@ cmd:option('-backend',                  'cudnn',    'Options: cudnn | nn')
 cmd:option('-model',                    'alexnet',  'Options: alexnet | vgg | resnet')
 cmd:option('-depth',                    'A',        'For vgg depth: A | B | C | D, For resnet depth: 18 | 34 | 50 | 101 | ... Not applicable for alexnet')
 cmd:option('-retrain',                  'none',     'Path to model to finetune')
-cmd:option('-save',                     'models_save','Path to save models')
+cmd:option('-save',                     '.','Path to save models')
 cmd:option('-data',                     'datasets/crowdai/' ,'Path to folder with train and val directories')
 
 local opt = cmd:parse(arg or {}) -- Table containing all these options
