@@ -7,7 +7,7 @@ I wrote a blog post describing the code here: http://chsasank.github.io/plantvil
 See the [installation instructions](INSTALL.md) for a step-by-step guide.
 - Install [Torch](http://torch.ch/docs/getting-started.html)
 - Optionally install Nvidia CUDA and [cuDNN v4](https://developer.nvidia.com/cudnn) and the Torch [cuDNN bindings](https://github.com/soumith/cudnn.torch/tree/R4)
-- Download the training and test dataset from https://www.crowdai.org
+- Download and extract the training and test dataset from https://www.crowdai.org.
 
 If you already have Torch installed, update `nn`, `cunn`, and `cudnn`.
 
