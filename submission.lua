@@ -19,11 +19,10 @@ require 'image'
 local t = require 'datasets/transforms'
 
 if #arg < 2 then
-   io.stderr:write('Usage: th classify.lua [MODEL] [FILE]...\n')
+   io.stderr:write('Usage: th classify.lua [MODEL] [DIRECTORY]...\n')
    os.exit(1)
 end
 
-local ffi = require 'ffi'
 -- find Images
 local function findImages(dir)
    local imagePath = torch.CharTensor()
@@ -67,20 +66,11 @@ local model = torch.load(arg[1])
 -- Evaluate mode
 model:evaluate()
 
--- The model was trained with this input normalization
-local meanstd = {
-   mean = { 0.485, 0.456, 0.406 },
-   std = { 0.229, 0.224, 0.225 },
-}
-
 local transform = t.Compose{
    t.Scale(256),
-   t.ColorNormalize(meanstd),
+   t.ColorNormalize(t.meanstd),
    t.TenCrop(224),
 }
-
-local features
-local N = 5
 
 function string_output(output)
    local string_print = ''
@@ -102,7 +92,7 @@ for _,imgpath in ipairs(all_test_paths) do
    -- View as mini-batch of size 10
    img_batch = transform(img)
 
-   -- Get the output of the softmax and mean it
+   -- Get the output of the softmax and average it
    local output = model:forward(img_batch:cuda()):mean(1)[1]
    local string_out = string_output(output)
 

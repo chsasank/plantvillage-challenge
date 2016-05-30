@@ -9,27 +9,34 @@ local DataGen = torch.class 'DataGen'
 
 function DataGen:__init(path)
     -- path is path of directory containing 'train' and 'val' folders
-    torch.setnumthreads(1)
+    -- find all the images in train and val folders. 
     self.rootPath = path
     self.trainImgPaths = self.findImages(paths.concat(self.rootPath, 'train'))
     self.valImgPaths = self.findImages(paths.concat(self.rootPath, 'val'))
     self.nbTrainExamples = #self.trainImgPaths
     self.nbValExamples = #self.valImgPaths 
+    torch.setnumthreads(1) -- random hack to speed up loading images
 end
 
 local function getClass(path)
+    -- gets class from the name of the parent directory
     local className = paths.basename(paths.dirname(path))
     return tonumber(className:sub(3)) + 1
 end
 
 
 function DataGen:generator(pathsList, batchSize, preprocess) 
-   batchSize = batchSize or 32
-   
-   local pathIndices = torch.randperm(#pathsList)
-   local batches = pathIndices:split(batchSize)
-   local i = 1
-   local function iterator()
+    -- pathsList is table with paths of images to be iterated over
+    -- batchSize is number of images to be loaded in one iteration
+    -- preprocess is function which will be applied to image after it's loaded
+    batchSize = batchSize or 32
+
+    -- Split all the paths into random batches
+    local pathIndices = torch.randperm(#pathsList)
+    local batches = pathIndices:split(batchSize)
+    local i = 1
+    
+    local function iterator()
       if i <= #batches then
          local currentBatch = batches[i]         
          local imgList = {}
@@ -56,8 +63,8 @@ function DataGen:generator(pathsList, batchSize, preprocess)
          i = i + 1
          return X, Y
       end
-   end
-   return iterator
+    end
+    return iterator
 end
 
 
