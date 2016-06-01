@@ -59,7 +59,8 @@ Train resnet 34
 $ th main.lua -model resnet -depth 34 -learningRate 0.1 -data path/to/train-val-directories
 ```
 
-This checkpoints the model every 10 epochs. It also saves best model as per validation set.
+This checkpoints the model every 10 epochs. It also saves the best model as per validation set. 
+You can use these to make a submission.
 
 ## Submission
 Create a submission using `model.h5`:
