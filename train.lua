@@ -66,7 +66,7 @@ function Trainer:train()
     --]]--
     self.optimState.learningRate = self:scheduler(self.nEpoch)    
     print('=> Training epoch # ' .. self.nEpoch)    
-    self.model:training() -- Make model trainable. 
+    self.model:training() -- i.e, switch dropout and otherlayers to training mode.
 
     local function feval()
         return self.criterion.output, self.gradParams
@@ -74,7 +74,7 @@ function Trainer:train()
 
     local trainingLoss = 0
     local numBatches = 0
-    local tic = torch.tic()
+    local tic = torch.tic() -- to keep track of time for an epoch, stars timer
     local count = 0
     self.confusion:zero()
 
@@ -124,8 +124,7 @@ function Trainer:validate()
     Validate model for an epoch. Loads data too.
     --]]--
     print('==> Validating')
-    self.model:evaluate() -- Convert model to evaluate mode
-
+    self.model:evaluate()  -- i.e, switch dropout and otherlayers to evaluate/determinstic mode.
     local count = 0
     local tic = torch.tic()
     local valLoss = 0

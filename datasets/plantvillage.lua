@@ -29,6 +29,7 @@ function DataGen:generator(pathsList, batchSize, preprocess)
     -- pathsList is table with paths of images to be iterated over
     -- batchSize is number of images to be loaded in one iteration
     -- preprocess is function which will be applied to image after it's loaded
+    -- This is used by both trainGenerator and valGenerator below
     batchSize = batchSize or 32
 
     -- Split all the paths into random batches
@@ -69,6 +70,7 @@ end
 
 
 function DataGen:trainGenerator(batchSize)
+  -- Returns a tranining batch generator
     local trainPreprocess = t.Compose{
         t.RandomSizedCrop(224),
         t.ColorJitter({
@@ -85,6 +87,7 @@ end
 
 
 function DataGen:valGenerator(batchSize)
+  -- Returns a validation batch generator
     local valPreprocess = t.Compose{
          t.Scale(256),
          t.ColorNormalize(t.meanstd),
