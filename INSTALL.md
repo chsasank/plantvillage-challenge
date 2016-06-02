@@ -1,7 +1,7 @@
-Torch ResNet Installation
+Torch Installation
 =========================
 
-This is the suggested way to install the Torch ResNet dependencies on [Ubuntu 14.04+](http://www.ubuntu.com/):
+This is the suggested way to install the dependencies on [Ubuntu 14.04+](http://www.ubuntu.com/):
 * NVIDIA CUDA 7.0+
 * NVIDIA cuDNN v4
 * Torch
