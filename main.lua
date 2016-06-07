@@ -30,6 +30,15 @@ if opt.retrain ~= 'none' then
     assert(paths.filep(opt.retrain), 'File not found: ' .. opt.retrain)
     print('Loading model from file: ' .. opt.retrain);
     net = torch.load(opt.retrain)
+
+    -- remove final linear layer    
+    local orig = net:get(#net.modules)
+    assert(torch.type(orig) == 'nn.Linear',
+         'expected last layer to be fully connected')
+    net:remove(#net.modules) --remove original layer
+
+    net:add(nn.Linear(orig.weight:size(2), opt.nbClasses))
+    net:add(nn.LogSoftMax())
 else
     require('models/'..opt.model)
     print('Creating new '..opt.model..' model')
