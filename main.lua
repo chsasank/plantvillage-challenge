@@ -74,7 +74,7 @@ for n_epoch = 1,opt.maxEpochs do
     -- Checkpoint model every 10 epochs
     if n_epoch%10 == 0 then
         local save_path = paths.concat( opt.save, opt.model..'_'..n_epoch..'.t7')
-        torch.save(save_path, net)
+        torch.save(save_path, net:clearState())
         print("Checkpointing Model")
     end
 
@@ -83,7 +83,7 @@ for n_epoch = 1,opt.maxEpochs do
         bestValLoss = valLoss
         print(('Current Best Validation Loss %.5f. Saving the model.'):format(bestValLoss))
         local save_path = paths.concat( opt.save, opt.model..'_best.t7')
-        torch.save(save_path, net)
+        torch.save(save_path, net:clearState())
     end
 
     print("Epoch "..n_epoch.." complete")
