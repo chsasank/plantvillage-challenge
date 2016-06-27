@@ -63,7 +63,7 @@ This checkpoints the model every 10 epochs. It also saves the best model as per 
 You can use these to make a submission.
 
 ## Submission
-Create a submission using `model.h5`:
+Create a submission using `model.t7`:
 ```bash
-th submission.lua model.h5 path/to/test > submission.csv
+th submission.lua model.t7 path/to/test > submission.csv
 ```
