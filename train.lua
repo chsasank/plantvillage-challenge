@@ -3,6 +3,9 @@ require 'xlua'
 require 'nn'
 require 'image'
 local c = require 'trepl.colorize'
+local pp = require 'pl.pretty'
+
+log = require 'log'
 
 local Trainer = torch.class 'Trainer'
 
@@ -30,7 +33,7 @@ function Trainer:__init(model, criterion, dataGen, opt)
         momentum = opt.momentum,
         nesterov = true,
         dampening = 0.0,
-        weightDecay = opt.weight_decay
+        weightDecay = opt.weightDecay
         }
     self.batchSize = opt.batchSize or 32
     self.nbClasses = opt.nbClasses or 38
@@ -44,6 +47,12 @@ function Trainer:__init(model, criterion, dataGen, opt)
         require 'cudnn'
         require 'cunn'
     end
+    
+    
+    log.outfile = 'logs/'.. self.opt.model .. '.log'
+    log.info("Training started")
+    log.info(pp.write(opt))
+    self.step = 5
 end
 
 
@@ -55,67 +64,97 @@ function Trainer:scheduler(epoch)
     epoch: int
         adjusts learning rate based on this.
     --]]--
-    decay = math.floor((epoch - 1) / 30)
+    decay = math.floor((epoch - 1) / 12)
     return self.opt.learningRate* math.pow(0.1, decay)
 end
+
+
+function Trainer:runEpoch(tag)
+    --[[--
+    Trains/Validates model for an epoch.
+    --]]--
+
+    self.optimState.learningRate = self:scheduler(self.nEpoch)
+    local iterator, maxSamples  
+    if tag =='train' then
+        print('=> Training epoch # ' .. self.nEpoch)    
+        self.model:training() -- i.e, switch dropout and otherlayers to training mode.
+        iterator = self.dataGen:trainGenerator(self.batchSize)
+        maxSamples = self.dataGen.nbTrainExamples
+    else
+        print('==> Validating')
+        self.model:evaluate()  -- i.e, switch dropout and otherlayers to evaluate/determinstic mode.
+        iterator = self.dataGen:valGenerator(self.batchSize)
+        maxSamples = self.dataGen.nbValExamples
+    end
+    
+
+    local function feval()
+        return self.criterion.output, self.gradParams
+    end
+
+    local epLoss, epAcc = 0
+    local numBatches = 0
+    local count = 0
+    self.confusion:zero()
+
+    local tic = torch.tic() -- to keep track of time for an epoch, stars timer
+    
+    -- Loop over batches
+    for input, target in iterator do 
+
+        xlua.progress(count+input:size(1), maxSamples)
+        numBatches = numBatches + 1
+        count = count + input:size(1)
+
+        -- Forward pass
+        local output = self.model:forward(input)
+        local loss = self.criterion:forward(output, target)
+
+        -- keep track of losses and log
+        epLoss = epLoss + loss
+        self.confusion:batchAdd(output, target)
+        if numBatches%self.step == 0 then
+            log.debug(tag, numBatches..'/'..math.ceil(self.dataGen.nbTrainExamples/self.batchSize),
+        loss)
+        end 
+
+
+        if tag == 'train' then
+            -- Backward pass
+            self.model:zeroGradParameters()
+            local critGrad = self.criterion:backward(output, target)
+            self.model:backward(input, critGrad)
+
+            -- Updates
+            local _,fs = optim.sgd(feval, self.params, self.optimState)
+        end
+    end
+
+    -- Keep track of losses and accuracies
+    epLoss = epLoss/numBatches
+    self.confusion:updateValids()
+    epAcc = self.confusion.totalValid*100
+
+    local stringToPrint = (tag..' Loss: '..c.cyan'%.4f'..' Accuracy: '..c.cyan'%.2f '..' \t time: %.2f s'):format(
+            epLoss, epAcc, torch.toc(tic)) 
+
+    print(stringToPrint)
+    log.info(stringToPrint)
+    
+    if tag == 'train' then
+        self.nEpoch = self.nEpoch + 1
+    end
+    return epLoss
+end 
+
 
 
 function Trainer:train()
     --[[--
     Trains model for an epoch.
     --]]--
-    self.optimState.learningRate = self:scheduler(self.nEpoch)    
-    print('=> Training epoch # ' .. self.nEpoch)    
-    self.model:training() -- i.e, switch dropout and otherlayers to training mode.
-
-    local function feval()
-        return self.criterion.output, self.gradParams
-    end
-
-    local trainingLoss = 0
-    local numBatches = 0
-    local tic = torch.tic() -- to keep track of time for an epoch, stars timer
-    local count = 0
-    self.confusion:zero()
-
-    local input, target, output
-
-    -- Loop over batches
-    for input_, target_ in self.dataGen:trainGenerator(self.batchSize) do 
-        if self.opt.backend ~= 'nn' then
-            input = input_:cuda(); target = target_:cuda()
-        else
-            input = input_; target = target_
-        end
-
-        xlua.progress(count+input:size(1), self.dataGen.nbTrainExamples)
-        numBatches = numBatches + 1
-
-    -- Forward pass
-        output = self.model:forward(input)
-        local loss = self.criterion:forward(output, target)
-        self.confusion:batchAdd(output, target)
-
-    -- Backward pass
-        self.model:zeroGradParameters()
-        local critGrad = self.criterion:backward(output, target)
-        self.model:backward(input, critGrad)
-
-        -- Updates
-        local _,fs = optim.sgd(feval, self.params, self.optimState)
-        trainingLoss = trainingLoss + fs[#fs]
-        count = count + input:size(1)
-    end
-
-    
-    -- Keep track of losses and accuracies
-    self.confusion:updateValids()
-    local trainAcc = self.confusion.totalValid*100
-    print(('Train Loss: '..c.cyan'%.4f'..' Accuracy: '..c.cyan'%.2f'..' \t time: %.2f s'):format(trainingLoss/numBatches, trainAcc, torch.toc(tic)))
-    -- self:saveImages(input, target, output)
-
-    self.nEpoch = self.nEpoch + 1
-    return trainingLoss/numBatches
+    return self:runEpoch('train')
 end 
 
 
@@ -123,41 +162,7 @@ function Trainer:validate()
     --[[--
     Validate model for an epoch. Loads data too.
     --]]--
-    print('==> Validating')
-    self.model:evaluate()  -- i.e, switch dropout and otherlayers to evaluate/determinstic mode.
-    local count = 0
-    local tic = torch.tic()
-    local valLoss = 0
-    local numBatches = 0
-    self.confusion:zero()
-
-    local input, target, output
-    
-    for input_, target_ in self.dataGen:valGenerator(self.batchSize) do
-        if self.opt.backend ~= 'nn' then
-            input = input_:cuda(); target = target_:cuda()
-        else
-            input = input_; target = target_
-        end
-
-        xlua.progress(count+input:size(1), self.dataGen.nbValExamples)
-        
-        -- Forward pass
-        output = self.model:forward(input)
-        local loss = self.criterion:forward(output, target)
-        self.confusion:batchAdd(output, target)
-    
-        valLoss = valLoss + loss
-        count = count + input:size(1)
-        numBatches = numBatches + 1
-    end
-    
-    -- Keep track of losses and accuracies
-    self.confusion:updateValids()
-    local valAcc = self.confusion.totalValid*100
-    print(('Validation Loss: '..c.cyan'%.4f'..' Accuracy: '..c.cyan'%.2f'..' \t time: %.2f s'):format(valLoss/numBatches, valAcc, torch.toc(tic)))
-    
-    return valLoss/numBatches
+    return self:runEpoch('validate')
 end
 
 function Trainer:getModel()
