@@ -1,7 +1,7 @@
 -- from https://github.com/soumith/imagenet-multiGPU.torch/blob/master/models/vggbn.lua
 require 'nn'
 
-function createModel(opt)
+local function createModel(opt)
    local opt = opt or {} 
    local modelType = opt.depth or 'A' -- on a titan black, B/D/E run out of memory even for batch-size 32
    
@@ -57,3 +57,5 @@ function createModel(opt)
 
    return model
 end
+
+return createModel

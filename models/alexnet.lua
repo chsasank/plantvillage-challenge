@@ -3,7 +3,7 @@ require 'nn'
 local SpatialConvolution = nn.SpatialConvolution--lib[1]
 local SpatialMaxPooling = nn.SpatialMaxPooling--lib[2]
 
-function createModel(opt)
+local function createModel(opt)
     local opt = opt or {}
     local nbClasses = opt.nbClasses or 38
     local nbChannels = opt.nbChannels or 3
@@ -66,3 +66,5 @@ function createModel(opt)
 
     return model
 end
+
+return createModel

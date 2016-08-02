@@ -40,7 +40,7 @@ if opt.retrain ~= 'none' then
     net:add(nn.Linear(orig.weight:size(2), opt.nbClasses))
     net:add(nn.LogSoftMax())
 else
-    require('models/'..opt.model)
+    createModel = require('models/'..opt.model)
     print('Creating new '..opt.model..' model')
     net = createModel(opt)
 end

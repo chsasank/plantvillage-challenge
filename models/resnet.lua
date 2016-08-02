@@ -17,7 +17,7 @@ local ReLU = nn.ReLU
 local Max = nn.SpatialMaxPooling
 local SBatchNorm = nn.SpatialBatchNormalization
 
-function createModel(opt)
+local function createModel(opt)
    opt = opt or {}
    local depth = tonumber(opt.depth or 34)
    local shortcutType = opt.shortcutType or 'B'
@@ -156,3 +156,5 @@ function createModel(opt)
 
    return model
 end
+
+return createModel
