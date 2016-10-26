@@ -102,6 +102,10 @@ function Trainer:runEpoch(tag)
     
     -- Loop over batches
     for input, target in iterator do 
+        if self.opt.backend ~= 'nn' then
+            input = input:cuda()
+            target = target:cuda()
+        end
 
         xlua.progress(count+input:size(1), maxSamples)
         numBatches = numBatches + 1
